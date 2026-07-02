@@ -1,0 +1,61 @@
+﻿FUNCTION "assign_task" : Void
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+   VAR_INPUT 
+      aim_f : Int;
+   END_VAR
+
+   VAR_TEMP 
+      i : Int;
+      j : Int;
+      temp : Int;
+      flag : Bool;
+   END_VAR
+
+
+BEGIN
+	//若电梯候梯时间都＞50S，那么则暂时不分配
+	FOR #i := 1 TO "ELE_SUM" DO      
+	    IF "Var".elev[#i].group_control.TH < 500 THEN//若有电梯候梯时间<50s 则退出循环正常分配，这里的"Var".elev[1].group_control.TH为时间最短的电梯,因为排序打乱了顺序
+	        EXIT;
+	    ELSE //否则不分配
+	        "Var".elev_num := 0;
+	        RETURN;//直接退出该块函数
+	    END_IF;
+	END_FOR;
+	
+	// //若电梯将要超载 且 外呼不是该电梯内呼 那么则由第二部电梯执行
+	// #flag := 0;
+	// FOR #i := 1 TO "ELE_SUM" - 1 DO
+	//     FOR #j := 1 TO "ELE_SUM" - 1 DO
+	//         IF ("Var".elev["Var".time_min[#j]].Load_Deal.now_load > "Var".elev["Var".time_min[#j]].Load_Deal.max_load - 75)
+	//             AND NOT "Var".elev["Var".time_min[#j]].Btn_Input.inside[#aim_f] THEN
+	//             #temp := "Var".time_min[#j + 1];
+	//             "Var".time_min[#j + 1] := "Var".time_min[#j];
+	//             "Var".time_min[#j] := #temp;
+	//         ELSE //若满足条件，直接退出循环
+	//             #flag := 1;
+	//             EXIT;
+	//         END_IF;
+	//     END_FOR;
+	//     IF #flag THEN
+	//         EXIT;
+	//     END_IF;
+	// END_FOR; 
+	
+	//若电梯超载，记录此时楼层，再加入分配中
+	FOR #i := 1 TO "ELE_SUM" DO
+	    IF "Var".elev[#i].Load_Deal.overload THEN
+	        IF "Var".elev[#i].Run_Deal.updown_state = 1 THEN
+	            "Var".btn_outside[1, "Var".elev[#i].Floor_Deal.Now_f] := 1;
+	        ELSIF "Var".elev[#i].Run_Deal.updown_state = 2 THEN 
+	            "Var".btn_outside[2, "Var".elev[#i].Floor_Deal.Now_f] := 1;
+	        END_IF;
+	    END_IF;
+	END_FOR;
+	
+	//输出最优电梯
+	"Var".elev_num := "Var".time_min[1];
+	
+END_FUNCTION
+

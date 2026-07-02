@@ -1,0 +1,36 @@
+﻿DATA_BLOCK "Var"
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+NON_RETAIN
+   VAR 
+      elev { S7_SetPoint := 'False'} : Array[1.."ELE_SUM"] of "Variable";
+      btn_outside { S7_SetPoint := 'True'} : Array[1..2, 0.."FlOOR_TOP"] of Bool;
+      cnt_res : Int;   // 计算接受自动运行信号次数
+      autorun : Bool;   // 模拟自动运行信号发生
+      cnt_over : Int;   // 计算完成初始化的电梯
+      elev_num : Int;   // 分配最优电梯
+      mode_choice : Int;   // 模式选择
+      time_min : Array[1.."ELE_SUM"] of Int;   // 候梯时间排序
+      Source { S7_SetPoint := 'False'} : "Source";
+   END_VAR
+
+
+BEGIN
+   elev[1].change.init_dir := 0;
+   elev[1].change.init_aimf := 1;
+   elev[1].change.max_load := 1000;
+   elev[1].change.speed := 2;
+   elev[2].change.init_dir := 0;
+   elev[2].change.init_aimf := 1;
+   elev[2].change.max_load := 1000;
+   elev[2].change.speed := 2;
+   elev[3].change.init_dir := 0;
+   elev[3].change.init_aimf := 1;
+   elev[3].change.max_load := 1500;
+   elev[3].change.speed := 2;
+   time_min[1] := 0;
+   time_min[2] := 0;
+   time_min[3] := 0;
+
+END_DATA_BLOCK
+

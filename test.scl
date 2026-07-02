@@ -1,0 +1,143 @@
+﻿FUNCTION "test" : Void
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+   VAR_TEMP 
+      i : Int;
+      j : Int;
+   END_VAR
+
+
+BEGIN
+	// REGION 楼层合并:24位合并为1个DWORD变量
+	//     //奇数位电梯左移四位，奇数位偶数位相加得八位byte输出:即高四位为奇数电梯楼层，低四位为偶数电梯楼层
+	//     "Var".Source.MyBits.floor_record1[1] := INT_TO_DWORD("Var".elev[1].Floor_Deal.Now_f) + SHL(IN := INT_TO_DWORD("Var".elev[2].Floor_Deal.Now_f), N := 4);
+	//     "Var".Source.MyBits.floor_record1[2] := INT_TO_DWORD("Var".elev[3].Floor_Deal.Now_f);//+ SHL(IN := INT_TO_DWORD("Var".elev[4].Floor_Deal.Now_f), N := 4)
+	//     // "Var".Source.MyBits.floor_record1[3] := INT_TO_DWORD("Var".elev[5].Floor_Deal.Now_f) + SHL(IN := INT_TO_DWORD("Var".elev[6].Floor_Deal.Now_f), N := 4);
+	//     //将前六部电梯转化为一个Dword变量  record2左移8位，record3左移16位 相加输出
+	//     "Var".Source.MyBits.floor_record := "Var".Source.MyBits.floor_record1[1] + SHL(IN := "Var".Source.MyBits.floor_record1[2], N := 8)+SHL(IN := "Var".Source.MyBits.floor_record1[3], N := 16);
+	// END_REGION
+	
+	// REGION 总外呼合并:18位合并为1个DWORD变量
+	//     "Var".Source.MyBits.btn_record[1] := "Var".btn_outside[1, 1];
+	//     "Var".Source.MyBits.btn_record[2] := "Var".btn_outside[1, 2];
+	//     "Var".Source.MyBits.btn_record[3] := "Var".btn_outside[1, 3];
+	//     "Var".Source.MyBits.btn_record[4] := "Var".btn_outside[1, 4];
+	//     "Var".Source.MyBits.btn_record[5] := "Var".btn_outside[1, 5];
+	//     "Var".Source.MyBits.btn_record[6] := "Var".btn_outside[1, 6];
+	//     "Var".Source.MyBits.btn_record[7] := "Var".btn_outside[1, 7];
+	//     "Var".Source.MyBits.btn_record[8] := "Var".btn_outside[1, 8];
+	//     "Var".Source.MyBits.btn_record[9] := "Var".btn_outside[1, 9];
+	//     "Var".Source.MyBits.btn_record[10] := "Var".btn_outside[2, 2];
+	//     "Var".Source.MyBits.btn_record[11] := "Var".btn_outside[2, 3];
+	//     "Var".Source.MyBits.btn_record[12] := "Var".btn_outside[2, 4];
+	//     "Var".Source.MyBits.btn_record[13] := "Var".btn_outside[2, 5];
+	//     "Var".Source.MyBits.btn_record[14] := "Var".btn_outside[2, 6];
+	//     "Var".Source.MyBits.btn_record[15] := "Var".btn_outside[2, 7];
+	//     "Var".Source.MyBits.btn_record[16] := "Var".btn_outside[2, 8];
+	//     "Var".Source.MyBits.btn_record[17] := "Var".btn_outside[2, 9];
+	//     "Var".Source.MyBits.btn_record[18] := "Var".btn_outside[2, 10];
+	//     GATHER(IN := "Var".Source.MyBits.btn_record,
+	//            OUT => "Var".Source.MyBits.mainbtn_output);
+	// END_REGION
+	        
+	// REGION 六部电梯内呼合并:60位合并为2个DWORD变量   
+	//     FOR #i := 1 TO 10 DO
+	//         //1号梯内呼赋值 :1~10
+	//         "Var".Source.MyBits.btn_inside_record1[#i] := "Var".elev[1].Btn_Input.inside[#i];
+	//         //2号梯内呼赋值 :11~20
+	//         "Var".Source.MyBits.btn_inside_record1[#i+10] := "Var".elev[2].Btn_Input.inside[#i];
+	//         //3号梯内呼赋值 :21~30
+	//         "Var".Source.MyBits.btn_inside_record1[#i+20] := "Var".elev[3].Btn_Input.inside[#i];
+	//     END_FOR;
+	//     //合并
+	//     GATHER(IN := "Var".Source.MyBits.btn_inside_record1,
+	//            OUT => "Var".Source.MyBits.btn_inside_record[1]);
+	
+	//     // FOR #i := 1 TO 10 DO
+	//     //     //4号梯内呼赋值 :1~10
+	//     //     "Var".Source.MyBits.btn_inside_record2[#i] := "Var".elev[4].Btn_Input.inside[#i];
+	//     //     //5号梯内呼赋值 :11~20
+	//     //     "Var".Source.MyBits.btn_inside_record2[#i + 10] := "Var".elev[5].Btn_Input.inside[#i];
+	//     //     //6号梯内呼赋值 :21~30
+	//     //     "Var".Source.MyBits.btn_inside_record2[#i + 20] := "Var".elev[6].Btn_Input.inside[#i];
+	//     // END_FOR;
+	//     // //合并
+	//     // GATHER(IN := "Var".Source.MyBits.btn_inside_record2,
+	//     //        OUT => "Var".Source.MyBits.btn_inside_record[2]);
+	// END_REGION
+	
+	// REGION 电梯载重合并:96位合并为3个DWORD变量
+	//     "Var".Source.MyBits.load_record[1] := INT_TO_DWORD(REAL_TO_INT("Var".elev[1].Load_Deal.now_load)) + SHL(IN := INT_TO_DWORD(REAL_TO_INT("Var".elev[2].Load_Deal.now_load)), N := 16);
+	//     "Var".Source.MyBits.load_record[2] := INT_TO_DWORD(REAL_TO_INT("Var".elev[3].Load_Deal.now_load)); //+ SHL(IN := INT_TO_DWORD(REAL_TO_INT("Var".elev[4].Load_Deal.now_load)), N := 16)
+	//     // "Var".Source.MyBits.load_record[3] := INT_TO_DWORD(REAL_TO_INT("Var".elev[5].Load_Deal.now_load)) + SHL(IN := INT_TO_DWORD(REAL_TO_INT("Var".elev[6].Load_Deal.now_load)), N := 16);
+	// END_REGION
+	
+	// REGION 电梯状态变量合并 : 6位合并为1个BYTE变量
+	//     //电梯状态记录 1运行 0静止
+	//     FOR #i := 1 TO "ELE_SUM" DO
+	//         IF "Elev".elev[#i].run_enable THEN
+	//             "Var".Source.MyBits.state_record[#i] := 1;
+	//         ELSE
+	//             "Var".Source.MyBits.state_record[#i] := 0;
+	//         END_IF;
+	//     END_FOR;
+	    
+	//     GATHER(IN := "Var".Source.MyBits.state_record,
+	//            OUT => "Var".Source.MyBits.state_output);
+	// END_REGION
+	
+	// REGION 虚拟外呼合并 :9*6个上呼 9*6个下呼合并为4位DWORD变量
+	//     //1~3层上呼录入
+	//     FOR #i := 1 TO 9 DO
+	//         "Var".Source.MyBits.outsiedup1[#i] := "Var".elev[1].Btn_Input.outside[1, #i];
+	//     END_FOR;
+	//     FOR #i := 1 TO 9 DO
+	//         "Var".Source.MyBits.outsiedup1[#i+9] := "Var".elev[2].Btn_Input.outside[1, #i];
+	//     END_FOR;
+	//     FOR #i := 1 TO 9 DO
+	//         "Var".Source.MyBits.outsiedup1[#i+18] := "Var".elev[3].Btn_Input.outside[1, #i];
+	//     END_FOR;
+	//     GATHER(IN := "Var".Source.MyBits.outsiedup1,
+	//            OUT => "Var".Source.MyBits.outside_fake[1]);
+	//     // //4~6层上呼录入
+	//     // FOR #i := 1 TO 9 DO
+	//     //     "Var".Source.MyBits.outsiedup2[#i] := "Var".elev[4].Btn_Input.outside[1, #i];
+	//     // END_FOR;
+	//     // FOR #i := 1 TO 9 DO
+	//     //     "Var".Source.MyBits.outsiedup2[#i + 9] := "Var".elev[5].Btn_Input.outside[1, #i];
+	//     // END_FOR;
+	//     // FOR #i := 1 TO 9 DO
+	//     //     "Var".Source.MyBits.outsiedup2[#i + 18] := "Var".elev[6].Btn_Input.outside[1, #i];
+	//     // END_FOR;
+	//     // GATHER(IN := "Var".Source.MyBits.outsiedup2,
+	//     //        OUT => "Var".Source.MyBits.outside_fake[2]);
+	//     //1~3层下呼录入
+	//     FOR #i := 1 TO 9 DO
+	//         "Var".Source.MyBits.outsieddown1[#i] := "Var".elev[1].Btn_Input.outside[2, #i];
+	//     END_FOR;
+	//     FOR #i := 1 TO 9 DO
+	//         "Var".Source.MyBits.outsieddown1[#i + 9] := "Var".elev[2].Btn_Input.outside[2, #i];
+	//     END_FOR;
+	//     FOR #i := 1 TO 9 DO
+	//         "Var".Source.MyBits.outsieddown1[#i + 18] := "Var".elev[3].Btn_Input.outside[2, #i];
+	//     END_FOR;
+	//     GATHER(IN := "Var".Source.MyBits.outsieddown1,
+	//            OUT => "Var".Source.MyBits.outside_fake[3]);
+	//     // //4~6层下呼录入
+	//     // FOR #i := 1 TO 9 DO
+	//     //     "Var".Source.MyBits.outsieddown2[#i] := "Var".elev[4].Btn_Input.outside[2, #i];
+	//     // END_FOR;
+	//     // FOR #i := 1 TO 9 DO
+	//     //     "Var".Source.MyBits.outsieddown2[#i + 9] := "Var".elev[5].Btn_Input.outside[2, #i];
+	//     // END_FOR;
+	//     // FOR #i := 1 TO 9 DO
+	//     //     "Var".Source.MyBits.outsieddown2[#i + 18] := "Var".elev[6].Btn_Input.outside[2, #i];
+	//     // END_FOR;
+	//     // GATHER(IN := "Var".Source.MyBits.outsieddown2,
+	//     //        OUT => "Var".Source.MyBits.outside_fake[4]);
+	// END_REGION
+	
+	
+	
+END_FUNCTION
+

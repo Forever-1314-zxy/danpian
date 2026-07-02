@@ -1,0 +1,37 @@
+﻿FUNCTION "Load_Deal" : Void
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+   VAR_TEMP 
+      i : Int;
+   END_VAR
+
+
+BEGIN
+	//重量转化 将输入重量转化为实际重量
+	FOR #i := 1 TO "ELE_SUM" DO
+	    "Var".elev[#i].Load_Deal.m_load := NORM_X(MIN := 0, VALUE := "Elev".elev[#i].weight, MAX := 27648);
+	    "Var".elev[#i].Load_Deal.now_load := SCALE_X(MIN := 0, VALUE := "Var".elev[#i].Load_Deal.m_load, MAX := 2000);
+	END_FOR;
+	
+	//荷载重量设置
+	FOR #i := 1 TO "ELE_SUM" DO
+	    "Var".elev[#i].Load_Deal.max_load := "Var".elev[#i].change.max_load;
+	END_FOR;
+	 
+	//超重判断
+	FOR #i := 1 TO "ELE_SUM" DO //增加模拟重量的判断，方便程序调试
+	    IF ("Var".elev[#i].Load_Deal.now_load  > "Var".elev[#i].Load_Deal.max_load) OR "Var".elev[#i].change.now_load> "Var".elev[#i].Load_Deal.max_load THEN
+	        "Var".elev[#i].Load_Deal.overload := 1;
+	    ELSE
+	        "Var".elev[#i].Load_Deal.overload := 0;
+	    END_IF;
+	    
+	    //将超载判断
+	    IF ("Var".elev[#i].Load_Deal.now_load > "Var".elev[#i].Load_Deal.max_load - 75) OR "Var".elev[#i].change.now_load > "Var".elev[#i].Load_Deal.max_load - 75 THEN
+	        "Var".elev[#i].Load_Deal.to_overload := 1;
+	    ELSE
+	        "Var".elev[#i].Load_Deal.to_overload := 0;
+	    END_IF;
+	END_FOR;
+END_FUNCTION
+

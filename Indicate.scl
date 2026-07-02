@@ -1,0 +1,47 @@
+﻿FUNCTION "Indicate" : Void
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+   VAR_TEMP 
+      i : Int;
+   END_VAR
+
+
+BEGIN
+	FOR #i := 1 TO "ELE_SUM" DO
+	    IF "Var".elev[#i].Run_Deal.allow_run THEN
+	        REGION 上下行显示
+	            IF "Var".elev[#i].Run_Deal.updown_state = 0 THEN
+	                "Elev".elev[#i].run_led.dowm := 0;
+	                "Elev".elev[#i].run_led.up := 0;
+	            ELSIF "Var".elev[#i].Run_Deal.updown_state = 1 THEN
+	                "Elev".elev[#i].run_led.dowm := 0;
+	                "Elev".elev[#i].run_led.up := 1;
+	            ELSIF "Var".elev[#i].Run_Deal.updown_state = 2 THEN
+	                "Elev".elev[#i].run_led.dowm := 1;
+	                "Elev".elev[#i].run_led.up := 0;
+	            END_IF;
+	        END_REGION
+	        
+	        REGION 照明与风扇显示
+	            IF "Var".elev[#i].Load_Deal.now_load = 0 THEN //超重时保持电梯门常开
+	                //超重信号消除，则回到关门态，电梯关门
+	                "Elev".elev[#i].indicate.fan := 0;
+	                "Elev".elev[#i].indicate.light := 0;
+	            ELSE
+	                "Elev".elev[#i].indicate.fan := 1;
+	                "Elev".elev[#i].indicate.light := 1;
+	            END_IF;
+	        END_REGION
+	        
+	        REGION 超载显示
+	            IF "Var".elev[#i].Load_Deal.overload THEN
+	                "Elev".elev[#i].indicate.full := 1;
+	            ELSE
+	                "Elev".elev[#i].indicate.full := 0;
+	            END_IF;
+	        END_REGION
+	    END_IF;
+	END_FOR;
+	    
+END_FUNCTION
+

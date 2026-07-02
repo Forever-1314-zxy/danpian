@@ -1,0 +1,63 @@
+﻿FUNCTION "Exam_Check" : Void
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+   VAR_TEMP 
+      i : Int;
+   END_VAR
+
+
+BEGIN
+	FOR #i := 1 TO "ELE_SUM" DO
+	    //检修模拟信号
+	    IF "Elev".elev[#i].alarm.REP OR "Var".elev[#i].change.REP THEN
+	        "Var".elev[#i].error.REP_deal := 1;
+	    ELSE
+	        "Var".elev[#i].error.REP_deal := 0;
+	    END_IF;
+	    //检修处理
+	    IF "Var".elev[#i].error.REP_deal THEN
+	        "Elev".elev[#i].indicate.error := 1; //亮起故障指示灯
+	        
+	        "Var".elev[#i].Run_Deal.allow_run := 0; //该电梯停止运行
+	        "Var".elev[#i].StartUp.Begin := 0;//不进行初始化
+	        
+	        "Var".elev[#i].Run_Deal.run_state := 0; //运行状态机为静止态
+	        "Var".elev[#i].Run_Deal.updown_state := 0; //上下行状态为静止
+	        //电梯控制状态为静止:关闭电机、接触器
+	        "Control_state"(eet_num := #i,
+	                        state := "STATIC");
+	    END_IF;
+	    //检测检修信号下降沿:检测到下降沿，电梯进行初始化后投入使用
+	    IF NOT "Var".elev[#i].error.REP_deal AND "Var".elev[#i].error.tag_REPL THEN //若检测到下降沿
+	        "Var".elev[#i].StartUp.Begin := 1;//让该部电梯开始初始化
+	        "Elev".elev[#i].indicate.error := 0; //关闭故障指示灯
+	        
+	        IF "Var".elev[#i].StartUp.re_mode =1 THEN //手动设置检修后初始化方向
+	            "Var".elev[#i].StartUp.direction := "Var".elev[#i].StartUp.re_dir;
+	            IF "Var".elev[#i].StartUp.re_dir THEN //向上初始化停在10层
+	                "Var".elev[#i].StartUp.aim_f := "FlOOR_TOP";
+	            ELSE
+	                "Var".elev[#i].StartUp.aim_f := 1;
+	            END_IF;
+	        ELSIF "Var".elev[#i].Floor_Deal.Now_f = 0 THEN //若该电梯当前楼层为0，则说明在初始化前该电梯就开始检修
+	            "Var".elev[#i].StartUp.direction := "Var".elev[#i].change.init_dir; //初始化方向就为预设方向
+	            IF NOT "Var".elev[#i].change.init_dir THEN //下行撞限位就停到1层
+	                "Var".elev[#i].StartUp.aim_f := 1;
+	            ELSE
+	                "Var".elev[#i].StartUp.aim_f := "FlOOR_TOP";//否则停到十层
+	            END_IF;
+	        ELSE //若该电梯有楼层，则说明是在运行时检修的，那么则就近初始化
+	            IF "Var".elev[#i].Floor_Deal.Now_f <= 5 THEN //楼层在5层即以下，向下初始化停在一层
+	                "Var".elev[#i].StartUp.direction := 0;
+	                "Var".elev[#i].StartUp.aim_f := 1;
+	            ELSE //否则向上初始化停到10层
+	                "Var".elev[#i].StartUp.direction := 1;
+	                "Var".elev[#i].StartUp.aim_f := "FlOOR_TOP";
+	            END_IF;
+	        END_IF;
+	    END_IF;
+	    "Var".elev[#i].error.tag_REPL := "Var".elev[#i].error.REP_deal; //将检修信号存入tag中 
+	END_FOR;
+	
+END_FUNCTION
+

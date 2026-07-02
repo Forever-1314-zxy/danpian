@@ -1,0 +1,126 @@
+﻿FUNCTION "clear_task" : Void
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+   VAR_TEMP 
+      i : Int;
+      j : Int;
+      k : Int;
+      cnt_tag : Int;
+      tag : Bool;
+      flag_up : Bool;
+      flag_down : Bool;
+   END_VAR
+
+
+BEGIN
+	//若外呼消除，则分配的虚拟外呼都消除
+	FOR #j := 2 TO "FlOOR_TOP" -1 DO
+	    FOR #i := 1 TO "ELE_SUM" DO
+	        IF NOT "Var".btn_outside[1, #j] THEN
+	            "Var".elev[#i].Btn_Input.outside[1, #j] := 0;
+	        END_IF;
+	        IF NOT "Var".btn_outside[2, #j] THEN
+	            "Var".elev[#i].Btn_Input.outside[2, #j] := 0;
+	        END_IF;
+	    END_FOR;
+	END_FOR;
+	//当一部电梯将要超载时，只响应内呼 和 内呼对应的外呼，其余消除
+	FOR #i := 1 TO "ELE_SUM" DO
+	    IF "Var".elev[#i].Load_Deal.to_overload THEN
+	        FOR #j := 1 TO "FlOOR_TOP" DO
+	            IF ("Var".elev[#i].Btn_Input.outside[1, #j] OR "Var".elev[#i].Btn_Input.outside[2, #j]) AND NOT "Var".elev[#i].Btn_Input.inside[#j] THEN
+	                "Var".elev[#i].Btn_Input.outside[1, #j] := 0;
+	                "Var".elev[#i].Btn_Input.outside[2, #j] := 0;
+	            END_IF;
+	        END_FOR;
+	    END_IF;
+	END_FOR;
+	//当电梯检修时，清除所有外呼信号
+	FOR #i := 1 TO "ELE_SUM" DO
+	    IF NOT "Var".elev[#i].Run_Deal.allow_run THEN
+	        FOR #j := 1 TO "FlOOR_TOP" DO
+	            "Var".elev[#i].Btn_Input.outside[1, #j] := 0;
+	            "Var".elev[#i].Btn_Input.outside[2, #j] := 0;
+	        END_FOR;
+	    END_IF;
+	END_FOR;
+	//清除电梯的后方外呼
+	FOR #i := 1 TO "ELE_SUM" DO
+	    IF "Var".elev[#i].Run_Deal.updown_state = 1 AND "Var".elev[#i].Floor_Deal.Now_f>1 THEN
+	        FOR #j := 1 TO "Var".elev[#i].Floor_Deal.Now_f - 1 DO
+	            "Var".elev[#i].Btn_Input.outside[1, #j] := 0;
+	            "Var".elev[#i].Btn_Input.outside[2, #j] := 0;
+	        END_FOR;
+	    ELSIF "Var".elev[#i].Run_Deal.updown_state = 2 AND "Var".elev[#i].Floor_Deal.Now_f<"FlOOR_TOP" THEN
+	        FOR #j := "FlOOR_TOP" TO "Var".elev[#i].Floor_Deal.Now_f + 1 BY -1 DO
+	            "Var".elev[#i].Btn_Input.outside[1, #j] := 0;
+	            "Var".elev[#i].Btn_Input.outside[2, #j] := 0;
+	        END_FOR;
+	    END_IF;
+	END_FOR;
+	//若一部电梯没有任务，则将任务清除再次进行分配
+	FOR #i := 1 TO "ELE_SUM" DO
+	    IF "Var".elev[#i].Run_Deal.updown_state = 0 AND "Var".elev[#i].Run_Deal.allow_run THEN
+	        #tag := 1;
+	        EXIT;
+	    END_IF;
+	    IF "Var".elev[#i].Run_Deal.updown_state <> 0 OR NOT "Var".elev[#i].Run_Deal.allow_run THEN
+	        #cnt_tag += 1;
+	    END_IF;
+	END_FOR;
+	IF #cnt_tag = "ELE_SUM" THEN
+	    #tag := 0;
+	END_IF;
+	"R_TRIG_DB"(CLK:=#tag);
+	IF "R_TRIG_DB".Q THEN
+	    FOR #i := 1 TO "ELE_SUM" DO
+	        FOR #j := 1 TO "FlOOR_TOP" DO
+	            IF #j <> "Var".elev[#i].Floor_Deal.Now_f THEN
+	                "Var".elev[#i].Btn_Input.outside[1, #j] := 0;
+	                "Var".elev[#i].Btn_Input.outside[2, #j] := 0;
+	            END_IF;
+	        END_FOR;
+	    END_FOR;
+	END_IF;
+	// //若执行同向任务时又接收反向任务，则将距离>1的反向任务清除
+	// FOR #i := 1 TO "ELE_SUM" DO
+	//     #flag_up := 0;
+	//     FOR #j := 1 TO "FlOOR_TOP" DO
+	//         IF "Var".elev[#i].Run_Deal.uopdown_state = 1 AND "Var".elev[#i].Btn_Input.outside[1, #j] THEN
+	//             #flag_up := 1;
+	//             GOTO LABEL1;
+	//         ELSE
+	//             EXIT;
+	//         END_IF;
+	//     END_FOR;
+	//     LABEL1:
+	//     IF #flag_up THEN
+	//         FOR #j := 1 TO "FlOOR_TOP" DO
+	//             IF #j <> "Var".elev[#i].Floor_Deal.Now_f THEN
+	//                 "Var".elev[#i].Btn_Input.outside[2, #j] := 0;
+	//             END_IF;
+	//         END_FOR;
+	//     END_IF;
+	    
+	//     #flag_down := 0;
+	//     FOR #j := 1 TO "FlOOR_TOP" DO
+	//         IF "Var".elev[#i].Run_Deal.uopdown_state = 2 AND "Var".elev[#i].Btn_Input.outside[2, #j] THEN
+	//             #flag_down := 1;
+	//             GOTO LABEL2;
+	//         ELSE
+	//             EXIT;
+	//         END_IF;
+	//     END_FOR;
+	//     LABEL2:
+	//     IF #flag_down THEN
+	//         FOR #j := 1 TO "FlOOR_TOP" DO
+	//             IF #j <> "Var".elev[#i].Floor_Deal.Now_f THEN
+	//                 "Var".elev[#i].Btn_Input.outside[1, #j] := 0;
+	//             END_IF;
+	//         END_FOR;
+	//     END_IF;
+	// END_FOR;
+	
+	
+END_FUNCTION
+
